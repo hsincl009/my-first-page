@@ -108,44 +108,56 @@
     }
     .sdot.done { background: var(--green); }
 
-    /* ── Entry image with button overlay ── */
-    .entry-wrap {
+    /* ── Entry image split layout ── */
+    .entry-top {
       display: block;
-      position: relative;
-      border-radius: var(--r);
-      overflow: hidden;
-      box-shadow: var(--sh);
-      margin-bottom: 12px;
+      width: 100%;
+      border-radius: var(--r) var(--r) 0 0;
+      vertical-align: bottom;
     }
-    .entry-img { width: 100%; display: block; }
-    .entry-overlay {
-      position: absolute;
-      top: 73%;
-      left: 0; right: 0;
-      height: 9%;
-      padding: 0 5%;
+    .entry-bottom {
+      display: block;
+      width: 100%;
+      border-radius: 0 0 var(--r) var(--r);
+      vertical-align: top;
+    }
+
+    /* ── Yes/No buttons between images ── */
+    .choice-area {
+      background: #fff8fc;
+      padding: 16px 16px;
       display: flex;
-      align-items: center;
+      gap: 12px;
+      margin: 0;
     }
-    .choice-wrap { display: flex; gap: 8px; width: 100%; margin: 0; }
     .btn-choice {
       flex: 1;
-      height: 100%;
-      min-height: 44px;
+      padding: 14px 0;
       border-radius: 12px;
-      border: 2px solid transparent;
-      background: rgba(255,255,255,0.15);
-      font-size: 20px;
+      border: 2px solid var(--pink);
+      background: #fff;
+      font-size: 18px;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
       transition: all .2s;
-      color: var(--text);
+      color: var(--pink);
     }
     .btn-choice.yes.on,
     .btn-choice.yes:active { background: var(--pink);  border-color: var(--pink);  color: #fff; }
     .btn-choice.no.on,
     .btn-choice.no:active  { background: #94a3b8; border-color: #94a3b8; color: #fff; }
+
+    /* ── Wrapper for all three sections ── */
+    .entry-wrap {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--r);
+      overflow: hidden;
+      box-shadow: var(--sh);
+      margin-bottom: 12px;
+      font-size: 0; /* 消除 inline 元素間距 */
+    }
 
     /* ── No-result card ── */
     .no-result-card {
@@ -353,7 +365,25 @@
       align-items: flex-start;
     }
     .doctor-name  { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .doctor-times { font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .doctor-times { 
+      font-size: 11px; 
+      color: var(--muted); 
+      line-height: 1.7; 
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .time-slot {
+      display: inline-block;
+      border: 1.5px solid var(--pink);
+      color: var(--pink);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
     .week-badge {
       display: inline-block;
       background: var(--pink-light);
@@ -503,15 +533,14 @@
       <div class="step-dot"></div>
     </div>
 
-    <!-- 圖片 + 按鈕疊加 -->
+    <!-- 上圖 → 是/否按鈕 → 下圖 -->
     <div class="entry-wrap">
-      <img src="entry.png" alt="乳癌初步篩選" class="entry-img">
-      <div class="entry-overlay">
-        <div class="choice-wrap">
-          <button type="button" class="btn-choice yes" id="btn-yes">是</button>
-          <button type="button" class="btn-choice no"  id="btn-no">否</button>
-        </div>
+      <img src="entry-top.png" alt="乳癌初步篩選" class="entry-top">
+      <div class="choice-area">
+        <button type="button" class="btn-choice yes" id="btn-yes">是</button>
+        <button type="button" class="btn-choice no"  id="btn-no">否</button>
       </div>
+      <img src="entry-bottom.png" alt="若有困擾建議評估" class="entry-bottom">
     </div>
 
     <!-- Shown only when user picks 否 -->
@@ -549,8 +578,8 @@
 
     <div class="card">
       <div class="card-title">個人資訊</div>
-      <p class="card-hint">請填寫乳癌手術日期，以便識別患者</p>
-      <input type="date" id="surgery-date" aria-label="乳癌手術日期"
+      <p class="card-hint">請填寫乳癌手術或化療日期（年月）</p>
+      <input type="month" id="surgery-date" aria-label="乳癌手術或化療日期（年月）"
         style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:14px;">
     </div>
 
@@ -641,22 +670,22 @@
 
   var DEFAULT_DOCTORS = [
     {
-      name:  '宋子茜 醫師',
-      badge: '1·3·5週',
-      times: '週一早上・週三早上・週五下午',
-      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=T0&selectAll=true&QueryID=A02283'
+      name:  '陳冠宇 醫師',
+      badge: '',
+      times: '週二下午・週三下午・週五上午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02871'
     },
     {
       name:  '邱翊翔 醫師',
       badge: '',
       times: '週一下午・週四下午',
-      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=C0&selectAll=true&QueryID=A01805'
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A01805'
     },
     {
-      name:  '黃薇臻 醫師',
-      badge: '',
-      times: '週五早上',
-      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02048'
+      name:  '宋子茜 醫師',
+      badge: '1·3·5週',
+      times: '週一早上・週三早上・週五下午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02283'
     }
   ];
 
@@ -832,11 +861,23 @@
     for (var di = 0; di < DOCTORS.length; di++) {
       var dr = DOCTORS[di];
       var badge = dr.badge ? '<span class="week-badge">' + dr.badge + '</span>' : '';
+      var timeParts = dr.times ? dr.times.split('・') : [];
+      var timeSlots = '';
+      if (dr.badge) {
+        timeSlots += '<span class="time-slot"><span class="week-badge" style="margin-right:2px">' + dr.badge + '</span>' + (timeParts[0] ? timeParts[0].trim() : '') + '</span>';
+        for (var t = 1; t < timeParts.length; t++) {
+          timeSlots += '<span class="time-slot">' + timeParts[t].trim() + '</span>';
+        }
+      } else {
+        for (var t = 0; t < timeParts.length; t++) {
+          timeSlots += '<span class="time-slot">' + timeParts[t].trim() + '</span>';
+        }
+      }
       doctorBoxes +=
         '<div class="doctor-box">' +
           '<div>' +
             '<div class="doctor-name">' + dr.name + '</div>' +
-            '<div class="doctor-times">' + badge + dr.times + '</div>' +
+            '<div class="doctor-times">' + timeSlots + '</div>' +
           '</div>' +
           '<a href="' + dr.link + '" target="_blank" class="tag">查詢掛號</a>' +
         '</div>';
@@ -969,11 +1010,23 @@
     for (var di = 0; di < DOCTORS.length; di++) {
       var dr = DOCTORS[di];
       var badge = dr.badge ? '<span class="week-badge">' + dr.badge + '</span>' : '';
+      var timeParts = dr.times ? dr.times.split('・') : [];
+      var timeSlots = '';
+      if (dr.badge) {
+        timeSlots += '<span class="time-slot"><span class="week-badge" style="margin-right:2px">' + dr.badge + '</span>' + (timeParts[0] ? timeParts[0].trim() : '') + '</span>';
+        for (var t = 1; t < timeParts.length; t++) {
+          timeSlots += '<span class="time-slot">' + timeParts[t].trim() + '</span>';
+        }
+      } else {
+        for (var t = 0; t < timeParts.length; t++) {
+          timeSlots += '<span class="time-slot">' + timeParts[t].trim() + '</span>';
+        }
+      }
       doctorBoxes +=
         '<div class="doctor-box">' +
           '<div>' +
             '<div class="doctor-name">' + dr.name + '</div>' +
-            '<div class="doctor-times">' + badge + dr.times + '</div>' +
+            '<div class="doctor-times">' + timeSlots + '</div>' +
           '</div>' +
           '<a href="' + dr.link + '" target="_blank" class="tag">查詢掛號</a>' +
         '</div>';

@@ -23,11 +23,55 @@
     .doctor-card {
       background: #fff;
       border-radius: 14px;
-      padding: 18px;
+      padding: 18px 18px 18px 12px;
       margin-bottom: 14px;
       box-shadow: 0 2px 10px rgba(0,0,0,.07);
       position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transition: box-shadow .2s, opacity .2s;
     }
+    /* 拖拉中的卡片樣式 */
+    .doctor-card.dragging {
+      opacity: .45;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    }
+    /* 放置目標高亮 */
+    .doctor-card.drag-over {
+      box-shadow: 0 0 0 2.5px #d63384, 0 4px 16px rgba(214,51,132,.18);
+    }
+
+    /* ── Drag handle ── */
+    .drag-handle {
+      flex-shrink: 0;
+      width: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding-top: 4px;
+      cursor: grab;
+      opacity: .35;
+      transition: opacity .15s;
+      touch-action: none; /* 觸控拖拉用 */
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .drag-handle:hover { opacity: .75; }
+    .drag-handle:active { cursor: grabbing; opacity: 1; }
+    .drag-handle span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      border-radius: 2px;
+      background: #64748b;
+    }
+
+    /* ── Card body (right of handle) ── */
+    .card-body { flex: 1; min-width: 0; }
+
     .card-header {
       display: flex;
       align-items: center;
@@ -162,6 +206,19 @@
       margin-bottom: 20px;
     }
     .back-link:hover { color: #d63384; }
+
+    /* ── Drag hint ── */
+    .drag-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .drag-hint-icon { font-size: 13px; }
   </style>
 </head>
 <body>
@@ -173,6 +230,10 @@
   <p class="subtitle">修改醫師資料後點「儲存」，設定會保留在此裝置。</p>
 
   <div class="section-title">醫師門診設定</div>
+  <div class="drag-hint">
+    <span class="drag-hint-icon">⠿</span>
+    <span>拖拉左側圖示可調整醫師順序</span>
+  </div>
   <div id="doctors-list"></div>
 
   <button type="button" class="btn-add" id="btn-add">＋ 新增醫師</button>
@@ -186,41 +247,86 @@
 <script>
   var DEFAULT_DOCTORS = [
     {
-      name:  '宋子茜 醫師',
-      badge: '1·3·5週',
-      times: '週一早上・週三早上・週五下午',
-      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=T0&selectAll=true&QueryID=A02283'
+      name:  '陳冠宇 醫師',
+      badge: '',
+      times: '週二下午・週三下午・週五上午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02871'
     },
     {
       name:  '邱翊翔 醫師',
       badge: '',
       times: '週一下午・週四下午',
-      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=C0&selectAll=true&QueryID=A01805'
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A01805'
     },
     {
-      name:  '黃薇臻 醫師',
-      badge: '',
-      times: '週五早上',
-      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02048'
+      name:  '宋子茜 醫師',
+      badge: '1·3·5週',
+      times: '週一早上・週三早上・週五下午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02283'
     }
   ];
 
   var list = document.getElementById('doctors-list');
+  var dragSrc = null;      // 正在被拖拉的卡片元素
+  var touchDragSrc = null; // 觸控拖拉來源
+  var touchClone = null;   // 觸控時的視覺替身
 
+  /* ── Helpers ── */
   function loadDoctors() {
     var saved = localStorage.getItem('ntucc_doctors');
     return saved ? JSON.parse(saved) : DEFAULT_DOCTORS;
   }
 
+  function esc(str) {
+    return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function collectData() {
+    var doctors = [];
+    list.querySelectorAll('.doctor-card').forEach(function(card) {
+      var dr = {};
+      card.querySelectorAll('input').forEach(function(inp) {
+        dr[inp.getAttribute('data-f')] = inp.value.trim();
+      });
+      doctors.push(dr);
+    });
+    return doctors;
+  }
+
+  function renumberCards() {
+    list.querySelectorAll('.doctor-card').forEach(function(card, i) {
+      card.querySelector('.card-num').textContent = i + 1;
+      card.querySelectorAll('input').forEach(function(inp) {
+        inp.setAttribute('data-i', i);
+      });
+      var removeBtn = card.querySelector('.btn-remove');
+      if (removeBtn) removeBtn.setAttribute('data-i', i);
+    });
+  }
+
+  /* ── Render ── */
   function renderList(doctors) {
     list.innerHTML = '';
     doctors.forEach(function(dr, i) {
-      var card = document.createElement('div');
-      card.className = 'doctor-card';
-      card.innerHTML =
+      var card = createCard(dr, i);
+      list.appendChild(card);
+      attachDragEvents(card);
+    });
+  }
+
+  function createCard(dr, i) {
+    var card = document.createElement('div');
+    card.className = 'doctor-card';
+    card.innerHTML =
+      /* 拖拉把手 */
+      '<div class="drag-handle" aria-label="拖拉以調整順序">' +
+        '<span></span><span></span><span></span><span></span><span></span>' +
+      '</div>' +
+      /* 卡片內容 */
+      '<div class="card-body">' +
         '<div class="card-header">' +
           '<div class="card-num">' + (i + 1) + '</div>' +
-          '<span class="card-label">' + (dr.name || '新醫師') + '</span>' +
+          '<span class="card-label">' + esc(dr.name || '新醫師') + '</span>' +
           '<button type="button" class="btn-remove" data-i="' + i + '">刪除</button>' +
         '</div>' +
         '<div class="field"><label>醫師姓名</label>' +
@@ -230,28 +336,157 @@
         '<div class="field"><label>門診時間</label>' +
           '<input type="text" data-i="' + i + '" data-f="times" value="' + esc(dr.times) + '" placeholder="例：週一早上・週三下午"></div>' +
         '<div class="field"><label>掛號連結</label>' +
-          '<input type="url" data-i="' + i + '" data-f="link" value="' + esc(dr.link) + '" placeholder="https://..."></div>';
-      list.appendChild(card);
+          '<input type="url" data-i="' + i + '" data-f="link" value="' + esc(dr.link) + '" placeholder="https://..."></div>' +
+      '</div>';
+    return card;
+  }
+
+  /* ════════════════════════════════
+     Desktop Drag & Drop (HTML5)
+  ════════════════════════════════ */
+  function attachDragEvents(card) {
+    var handle = card.querySelector('.drag-handle');
+
+    /* 只有按住把手才啟用拖拉 */
+    handle.addEventListener('mousedown', function() {
+      card.setAttribute('draggable', 'true');
     });
-  }
+    handle.addEventListener('mouseup', function() {
+      card.setAttribute('draggable', 'false');
+    });
 
-  function esc(str) {
-    return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  }
+    card.addEventListener('dragstart', function(e) {
+      if (!card.getAttribute('draggable') || card.getAttribute('draggable') === 'false') {
+        e.preventDefault(); return;
+      }
+      dragSrc = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', ''); // Firefox 必須
+    });
 
-  function collectData() {
-    var doctors = [];
-    var cards = list.querySelectorAll('.doctor-card');
-    cards.forEach(function(card) {
-      var inputs = card.querySelectorAll('input');
-      var dr = {};
-      inputs.forEach(function(inp) {
-        dr[inp.getAttribute('data-f')] = inp.value.trim();
+    card.addEventListener('dragend', function() {
+      card.classList.remove('dragging');
+      card.setAttribute('draggable', 'false');
+      list.querySelectorAll('.doctor-card').forEach(function(c) {
+        c.classList.remove('drag-over');
       });
-      doctors.push(dr);
+      dragSrc = null;
+      renumberCards();
     });
-    return doctors;
+
+    card.addEventListener('dragover', function(e) {
+      if (!dragSrc || dragSrc === card) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    card.addEventListener('dragenter', function() {
+      if (!dragSrc || dragSrc === card) return;
+      list.querySelectorAll('.doctor-card').forEach(function(c) {
+        c.classList.remove('drag-over');
+      });
+      card.classList.add('drag-over');
+    });
+
+    card.addEventListener('dragleave', function(e) {
+      /* 只在真正離開卡片邊界時移除 */
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drag-over');
+      }
+    });
+
+    card.addEventListener('drop', function(e) {
+      if (!dragSrc || dragSrc === card) return;
+      e.preventDefault();
+      card.classList.remove('drag-over');
+
+      /* 決定插入位置：放置目標的上半 → 插到前面，下半 → 插到後面 */
+      var rect = card.getBoundingClientRect();
+      var midY = rect.top + rect.height / 2;
+      if (e.clientY < midY) {
+        list.insertBefore(dragSrc, card);
+      } else {
+        list.insertBefore(dragSrc, card.nextSibling);
+      }
+    });
+
+    /* ══════════════════════════════
+       Touch Drag & Drop (mobile)
+    ══════════════════════════════ */
+    handle.addEventListener('touchstart', function(e) {
+      e.preventDefault(); // 防止頁面滾動
+      touchDragSrc = card;
+
+      /* 建立半透明浮動替身 */
+      var clone = card.cloneNode(true);
+      clone.style.cssText =
+        'position:fixed;z-index:999;pointer-events:none;opacity:0.75;' +
+        'width:' + card.offsetWidth + 'px;border-radius:14px;' +
+        'box-shadow:0 8px 30px rgba(0,0,0,.2);transition:none;';
+      document.body.appendChild(clone);
+      touchClone = clone;
+
+      var touch = e.touches[0];
+      var rect = card.getBoundingClientRect();
+      touchClone._offsetX = touch.clientX - rect.left;
+      touchClone._offsetY = touch.clientY - rect.top;
+      touchClone.style.left = (touch.clientX - touchClone._offsetX) + 'px';
+      touchClone.style.top  = (touch.clientY - touchClone._offsetY) + 'px';
+
+      card.classList.add('dragging');
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', function(e) {
+      if (!touchDragSrc || !touchClone) return;
+      e.preventDefault();
+      var touch = e.touches[0];
+      touchClone.style.left = (touch.clientX - touchClone._offsetX) + 'px';
+      touchClone.style.top  = (touch.clientY - touchClone._offsetY) + 'px';
+
+      /* 找到指尖下方的目標卡片 */
+      touchClone.style.display = 'none';
+      var el = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchClone.style.display = '';
+      var target = el ? el.closest('.doctor-card') : null;
+
+      list.querySelectorAll('.doctor-card').forEach(function(c) {
+        c.classList.remove('drag-over');
+      });
+      if (target && target !== touchDragSrc) {
+        target.classList.add('drag-over');
+      }
+    }, { passive: false });
+
+    handle.addEventListener('touchend', function(e) {
+      if (!touchDragSrc) return;
+      var touch = e.changedTouches[0];
+
+      /* 移除替身 */
+      if (touchClone) { document.body.removeChild(touchClone); touchClone = null; }
+      touchDragSrc.classList.remove('dragging');
+      list.querySelectorAll('.doctor-card').forEach(function(c) {
+        c.classList.remove('drag-over');
+      });
+
+      /* 找落點卡片並插入 */
+      var el = document.elementFromPoint(touch.clientX, touch.clientY);
+      var target = el ? el.closest('.doctor-card') : null;
+      if (target && target !== touchDragSrc) {
+        var rect = target.getBoundingClientRect();
+        if (touch.clientY < rect.top + rect.height / 2) {
+          list.insertBefore(touchDragSrc, target);
+        } else {
+          list.insertBefore(touchDragSrc, target.nextSibling);
+        }
+      }
+
+      touchDragSrc = null;
+      renumberCards();
+    });
   }
+
+  /* ── Card interaction ── */
 
   // Live update card label when name changes
   list.addEventListener('input', function(e) {
@@ -265,8 +500,8 @@
   // Remove doctor
   list.addEventListener('click', function(e) {
     if (e.target.classList.contains('btn-remove')) {
-      var idx = parseInt(e.target.getAttribute('data-i'), 10);
       var doctors = collectData();
+      var idx = parseInt(e.target.getAttribute('data-i'), 10);
       doctors.splice(idx, 1);
       renderList(doctors);
       showToast('已刪除');
