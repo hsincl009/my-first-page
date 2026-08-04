@@ -639,7 +639,7 @@
     { lbl: '最嚴重疲憊', c: '#7c3aed' }
   ];
 
-  var DOCTORS = [
+  var DEFAULT_DOCTORS = [
     {
       name:  '宋子茜 醫師',
       badge: '1·3·5週',
@@ -659,6 +659,9 @@
       link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02048'
     }
   ];
+
+  var saved = localStorage.getItem('ntucc_doctors');
+  var DOCTORS = saved ? JSON.parse(saved) : DEFAULT_DOCTORS;
 
   /* ─── State ─── */
   var answers = [];

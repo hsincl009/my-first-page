@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理後台 · 乳癌自我評估</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+    /* ── Doctor card ── */
+    .doctor-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      position: relative;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .card-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #d63384;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-label { font-size: 15px; font-weight: 700; margin-left: 10px; flex: 1; }
+    .btn-remove {
+      background: #fee2e2;
+      color: #dc2626;
+      border: none;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-remove:hover { background: #fca5a5; }
+
+    .field { margin-bottom: 12px; }
+    label { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 500; }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #1e293b;
+      transition: border-color .2s;
+    }
+    input:focus { outline: none; border-color: #d63384; }
+
+    /* ── Add button ── */
+    .btn-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      background: #fff;
+      border: 2px dashed #d63384;
+      border-radius: 14px;
+      color: #d63384;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 20px;
+      transition: background .2s;
+    }
+    .btn-add:hover { background: #fce4f1; }
+
+    /* ── Save button ── */
+    .btn-save {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #d63384, #a91f63);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 14px rgba(214,51,132,.35);
+      transition: transform .15s;
+      margin-bottom: 12px;
+    }
+    .btn-save:active { transform: translateY(1px); }
+
+    .btn-reset-default {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      color: #94a3b8;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 20px;
+    }
+    .btn-reset-default:hover { border-color: #94a3b8; color: #64748b; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 99px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: #94a3b8;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #64748b;
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+    .back-link:hover { color: #d63384; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <a href="index.html" class="back-link">← 回到評估頁面</a>
+
+  <h1>⚙️ 管理後台</h1>
+  <p class="subtitle">修改醫師資料後點「儲存」，設定會保留在此裝置。</p>
+
+  <div class="section-title">醫師門診設定</div>
+  <div id="doctors-list"></div>
+
+  <button type="button" class="btn-add" id="btn-add">＋ 新增醫師</button>
+  <button type="button" class="btn-save" id="btn-save">💾 儲存設定</button>
+  <button type="button" class="btn-reset-default" id="btn-reset">↩ 還原預設值</button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var DEFAULT_DOCTORS = [
+    {
+      name:  '宋子茜 醫師',
+      badge: '1·3·5週',
+      times: '週一早上・週三早上・週五下午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=T0&selectAll=true&QueryID=A02283'
+    },
+    {
+      name:  '邱翊翔 醫師',
+      badge: '',
+      times: '週一下午・週四下午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=C0&selectAll=true&QueryID=A01805'
+    },
+    {
+      name:  '黃薇臻 醫師',
+      badge: '',
+      times: '週五早上',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02048'
+    }
+  ];
+
+  var list = document.getElementById('doctors-list');
+
+  function loadDoctors() {
+    var saved = localStorage.getItem('ntucc_doctors');
+    return saved ? JSON.parse(saved) : DEFAULT_DOCTORS;
+  }
+
+  function renderList(doctors) {
+    list.innerHTML = '';
+    doctors.forEach(function(dr, i) {
+      var card = document.createElement('div');
+      card.className = 'doctor-card';
+      card.innerHTML =
+        '<div class="card-header">' +
+          '<div class="card-num">' + (i + 1) + '</div>' +
+          '<span class="card-label">' + (dr.name || '新醫師') + '</span>' +
+          '<button type="button" class="btn-remove" data-i="' + i + '">刪除</button>' +
+        '</div>' +
+        '<div class="field"><label>醫師姓名</label>' +
+          '<input type="text" data-i="' + i + '" data-f="name" value="' + esc(dr.name) + '" placeholder="例：王小明 醫師"></div>' +
+        '<div class="field"><label>週別標籤（可空白）</label>' +
+          '<input type="text" data-i="' + i + '" data-f="badge" value="' + esc(dr.badge) + '" placeholder="例：1·3·5週"></div>' +
+        '<div class="field"><label>門診時間</label>' +
+          '<input type="text" data-i="' + i + '" data-f="times" value="' + esc(dr.times) + '" placeholder="例：週一早上・週三下午"></div>' +
+        '<div class="field"><label>掛號連結</label>' +
+          '<input type="url" data-i="' + i + '" data-f="link" value="' + esc(dr.link) + '" placeholder="https://..."></div>';
+      list.appendChild(card);
+    });
+  }
+
+  function esc(str) {
+    return (str || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function collectData() {
+    var doctors = [];
+    var cards = list.querySelectorAll('.doctor-card');
+    cards.forEach(function(card) {
+      var inputs = card.querySelectorAll('input');
+      var dr = {};
+      inputs.forEach(function(inp) {
+        dr[inp.getAttribute('data-f')] = inp.value.trim();
+      });
+      doctors.push(dr);
+    });
+    return doctors;
+  }
+
+  // Live update card label when name changes
+  list.addEventListener('input', function(e) {
+    var inp = e.target;
+    if (inp.getAttribute('data-f') === 'name') {
+      var card = inp.closest('.doctor-card');
+      card.querySelector('.card-label').textContent = inp.value || '新醫師';
+    }
+  });
+
+  // Remove doctor
+  list.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-remove')) {
+      var idx = parseInt(e.target.getAttribute('data-i'), 10);
+      var doctors = collectData();
+      doctors.splice(idx, 1);
+      renderList(doctors);
+      showToast('已刪除');
+    }
+  });
+
+  // Add doctor
+  document.getElementById('btn-add').addEventListener('click', function() {
+    var doctors = collectData();
+    doctors.push({ name: '', badge: '', times: '', link: '' });
+    renderList(doctors);
+    list.lastElementChild.querySelector('input').focus();
+    list.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // Save
+  document.getElementById('btn-save').addEventListener('click', function() {
+    var doctors = collectData();
+    localStorage.setItem('ntucc_doctors', JSON.stringify(doctors));
+    showToast('✓ 已儲存！重新整理評估頁即生效');
+  });
+
+  // Reset to default
+  document.getElementById('btn-reset').addEventListener('click', function() {
+    if (confirm('確定要還原為預設醫師資料嗎？')) {
+      localStorage.removeItem('ntucc_doctors');
+      renderList(DEFAULT_DOCTORS);
+      showToast('已還原預設值');
+    }
+  });
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+  }
+
+  // Init
+  renderList(loadDoctors());
+</script>
+</body>
+</html>
