@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>乳癌術後自我評估</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink:       #d63384;
+      --pink-dark:  #a91f63;
+      --pink-light: #fce4f1;
+      --teal:       #0dcaf0;
+      --green:      #20c472;
+      --green-lt:   #d4f7e9;
+      --text:       #1e293b;
+      --muted:      #64748b;
+      --bg:         #f1f5f9;
+      --white:      #ffffff;
+      --sh:         0 2px 12px rgba(0,0,0,.08);
+      --r:          14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Screen system ── */
+    .screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      transform: translateX(100%);
+      transition: transform .35s cubic-bezier(.25,.8,.3,1);
+      visibility: hidden;
+    }
+    .screen.active {
+      transform: translateX(0);
+      visibility: visible;
+    }
+
+    .page {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px 16px 56px;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 18px; }
+    .logo { height: 38px; margin-bottom: 10px; }
+    h1 { font-size: 22px; font-weight: 700; }
+    .header-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Step indicator ── */
+    .step-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      transition: background .3s, width .3s, border-radius .3s;
+    }
+    .step-dot.active {
+      background: var(--pink);
+      width: 22px;
+      border-radius: 4px;
+    }
+    .step-dot.done { background: var(--green); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--r);
+      padding: 14px 14px 16px;
+      box-shadow: var(--sh);
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .card-hint { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+
+    .sdot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: inline-block;
+      transition: background .3s;
+      flex-shrink: 0;
+    }
+    .sdot.done { background: var(--green); }
+
+    /* ── Entry image with button overlay ── */
+    .entry-wrap {
+      display: block;
+      position: relative;
+      border-radius: var(--r);
+      overflow: hidden;
+      box-shadow: var(--sh);
+      margin-bottom: 12px;
+    }
+    .entry-img { width: 100%; display: block; }
+    .entry-overlay {
+      position: absolute;
+      top: 73%;
+      left: 0; right: 0;
+      height: 9%;
+      padding: 0 5%;
+      display: flex;
+      align-items: center;
+    }
+    .choice-wrap { display: flex; gap: 8px; width: 100%; margin: 0; }
+    .btn-choice {
+      flex: 1;
+      height: 100%;
+      min-height: 44px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.15);
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .2s;
+      color: var(--text);
+    }
+    .btn-choice.yes.on,
+    .btn-choice.yes:active { background: var(--pink);  border-color: var(--pink);  color: #fff; }
+    .btn-choice.no.on,
+    .btn-choice.no:active  { background: #94a3b8; border-color: #94a3b8; color: #fff; }
+
+    /* ── No-result card ── */
+    .no-result-card {
+      border-radius: var(--r);
+      background: linear-gradient(135deg, #f0fdf6, #e8f9ff);
+      border: 2px solid var(--green-lt);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .no-result-icon  { font-size: 48px; margin-bottom: 10px; }
+    .no-result-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .no-result-sub   { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* ── Top nav bar for screens 2 & 3 ── */
+    .result-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0 14px;
+    }
+    .back-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: var(--white);
+      box-shadow: var(--sh);
+      font-size: 18px;
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .back-btn:active { transform: scale(.94); }
+    .result-bar-title { font-size: 14px; font-weight: 700; color: var(--muted); }
+
+    /* ── Question grid ── */
+    .q-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .q-cell {
+      background: var(--bg);
+      border: 2px solid transparent;
+      border-radius: 10px;
+      padding: 8px 9px;
+      transition: background .2s, border-color .2s;
+    }
+    .q-cell.is-yes { background: #fff0f7; border-color: var(--pink-light); }
+    .q-cell.is-no  { background: #f0fdf6; border-color: var(--green-lt);  }
+    .q-label { font-size: 12.5px; line-height: 1.4; margin-bottom: 7px; min-height: 30px; }
+    .yn-group { display: flex; gap: 4px; }
+    .yb {
+      flex: 1;
+      padding: 4px 0;
+      border-radius: 99px;
+      border: 1.5px solid #e2e8f0;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .2s;
+      text-align: center;
+    }
+    .yb.yes.on { background: var(--pink);  border-color: var(--pink);  color: #fff; }
+    .yb.no.on  { background: var(--green); border-color: var(--green); color: #fff; }
+
+    /* ── Fatigue slider ── */
+    .fatigue-wrap { position: relative; border-radius: 10px; overflow: visible; }
+    .fatigue-img  { width: 100%; display: block; border-radius: 10px; }
+    .fatigue-overlay {
+      position: absolute;
+      top: 75%; left: 0; right: 0;
+      background: rgba(255,255,255,.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 6px 12px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 0 0 10px 10px;
+    }
+    .score-pill {
+      flex-shrink: 0;
+      background: rgba(255,255,255,.92);
+      border-radius: 99px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,.14);
+      white-space: nowrap;
+      transition: color .3s;
+      line-height: 1.5;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 10px;
+      border-radius: 99px;
+      outline: none;
+      cursor: pointer;
+      background: #e2e8f0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--pink);
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--pink);
+      cursor: pointer;
+    }
+
+    .citation { font-size: 10.5px; color: #94a3b8; text-align: right; margin-top: 5px; }
+
+    /* ── Submit ── */
+    .btn-submit {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--r);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 14px rgba(214,51,132,.4);
+      transition: transform .15s, box-shadow .15s, background .2s;
+      margin-bottom: 14px;
+    }
+    .btn-submit:active { transform: translateY(1px); }
+    .btn-submit.dim { background: #cbd5e1; box-shadow: none; cursor: default; }
+
+    /* ── Inline warning ── */
+    .warn-msg {
+      background: #fff3cd;
+      border: 1px solid #ffe69c;
+      color: #664d03;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+      display: none;
+    }
+    .warn-msg.show { display: block; }
+
+    /* ── Message toast ── */
+    .message {
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      border-radius: var(--r);
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+    }
+    .message.show    { display: block; }
+    .message.success { background: #d4f7e9; color: #0d6e4f; border-left: 4px solid var(--green); }
+    .message.error   { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+
+    /* ── Result inner wrapper ── */
+    .result-inner {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 14px 16px 36px;
+    }
+
+    /* ── Referral card ── */
+    .notif-card {
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 2px solid var(--pink-light);
+      background: linear-gradient(160deg, #fff4fb 0%, #eef9ff 100%);
+      margin-bottom: 12px;
+    }
+    .notif-bar  { height: 5px; background: linear-gradient(90deg, var(--pink), var(--teal)); }
+    .notif-body { padding: 16px 16px 18px; }
+
+    .notif-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .notif-icon  { font-size: 26px; }
+    .notif-title { font-size: 17px; font-weight: 700; }
+    .notif-sub   { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+    /* ── Doctor boxes ── */
+    .doctor-box {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 11px 14px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .doctor-name  { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .doctor-times { font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .week-badge {
+      display: inline-block;
+      background: var(--pink-light);
+      color: var(--pink);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .tag {
+      display: inline-block;
+      background: var(--pink-light);
+      color: var(--pink);
+      border-radius: 99px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-left: 8px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    /* ── Assessment summary ── */
+    .findings  { margin-bottom: 14px; }
+    .find-hd   { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+    .find-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      margin-bottom: 6px;
+    }
+    .find-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .find-row.full { grid-column: 1 / -1; padding-top: 4px; border-top: 1px solid #f1f5f9; margin-top: 2px; }
+    .fdot { flex-shrink: 0; }
+
+    .cta-box {
+      background: var(--pink);
+      border-radius: 10px;
+      padding: 13px 16px;
+      text-align: center;
+      color: #fff;
+      font-size: 14.5px;
+      font-weight: 700;
+    }
+    .cta-box small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      opacity: .85;
+      margin-top: 3px;
+    }
+    .notif-date { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 10px; }
+
+    /* ── Good result ── */
+    .good-card {
+      border-radius: var(--r);
+      background: linear-gradient(135deg, #f0fdf6, #e8f9ff);
+      border: 2px solid var(--green-lt);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .good-icon  { font-size: 52px; margin-bottom: 10px; }
+    .good-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .good-sub   { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* ── Privacy bubble ── */
+    .privacy-btn {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: #94a3b8;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .privacy-btn:active { transform: scale(.9); }
+    #privacy-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+    }
+    #privacy-bubble {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 380px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+      z-index: 201;
+      display: none;
+    }
+    #privacy-backdrop.show,
+    #privacy-bubble.show { display: block; }
+
+    /* ── Reset button ── */
+    .btn-reset {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 2px solid #e2e8f0;
+      border-radius: var(--r);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-reset:hover { border-color: var(--pink); color: var(--pink); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════
+     Screen 1 — Initial Screening
+════════════════════════════ -->
+<div id="s1" class="screen active">
+  <div class="page">
+
+    <div class="step-bar">
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <!-- 圖片 + 按鈕疊加 -->
+    <div class="entry-wrap">
+      <img src="entry.png" alt="乳癌初步篩選" class="entry-img">
+      <div class="entry-overlay">
+        <div class="choice-wrap">
+          <button type="button" class="btn-choice yes" id="btn-yes">是</button>
+          <button type="button" class="btn-choice no"  id="btn-no">否</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shown only when user picks 否 -->
+    <div id="no-result" style="display:none">
+      <div class="no-result-card">
+        <div class="no-result-icon">&#9989;</div>
+        <div class="no-result-title">目前不需轉介</div>
+        <p class="no-result-sub">
+          感謝您完成初步篩選。<br>
+          若日後出現治療相關症狀，請再次評估。
+        </p>
+      </div>
+      <button type="button" class="btn-reset" id="btn-restart-no">&#8592; 重新開始</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+     Screen 2 — Symptom Assessment
+════════════════════════════ -->
+<div id="s2" class="screen">
+  <div class="page">
+
+    <div class="result-bar">
+      <button type="button" class="back-btn" id="btn-back2" aria-label="返回">&#8592;</button>
+      <span class="result-bar-title">症狀評估</span>
+    </div>
+
+    <div class="step-bar">
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">個人資訊</div>
+      <p class="card-hint">請填寫乳癌手術日期，以便識別患者</p>
+      <input type="date" id="surgery-date" aria-label="乳癌手術日期"
+        style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:14px;">
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        肩部活動評估
+        <span class="sdot" id="sdot"></span>
+      </div>
+      <p class="card-hint">以下活動是否有困難？<br>有任一困難 → 可繼續；全部選「沒有」→ 也可繼續。</p>
+      <div class="q-grid" id="q-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">疲憊量尺</div>
+      <p class="card-hint">拖曳滑桿選出目前疲累程度</p>
+      <div class="fatigue-wrap">
+        <img src="pdf_imgs/Im1.png" alt="疲憊量尺" class="fatigue-img">
+        <div class="fatigue-overlay">
+          <span class="score-pill" id="score-pill">0&nbsp;&nbsp;無疲憊</span>
+          <input type="range" id="slider" min="0" max="10" value="0"
+            aria-label="疲憊程度滑桿，範圍從0無疲憊到10最疲憊">
+        </div>
+      </div>
+      <p class="citation">圖取自癌因性疲憊之臨床治療指引（2017）</p>
+    </div>
+
+    <div class="warn-msg" id="warn"></div>
+    <button type="button" class="btn-submit dim" id="btn-submit">查看評估結果</button>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+     Screen 3 — Result
+════════════════════════════ -->
+<div id="s3" class="screen">
+  <div class="result-inner">
+
+    <div class="result-bar">
+      <button type="button" class="back-btn" id="btn-back3" aria-label="返回">&#8592;</button>
+      <span class="result-bar-title">評估結果</span>
+    </div>
+
+    <div class="step-bar">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+    </div>
+
+    <div id="message-container"></div>
+    <div id="result"></div>
+
+  </div>
+</div>
+
+<!-- Privacy bubble (outside screens to avoid transform stacking context) -->
+<div id="privacy-backdrop"></div>
+<div id="privacy-bubble">
+  <strong style="font-size:13px;color:#1e293b;display:block;margin-bottom:8px">隱私聲明</strong>
+  本評估為 NTUCC 內部使用。本系統不會蒐集或保留個人身份資訊（如病歷號）。
+  評估結果僅作為臨床參考，患者同意診療人員可依此評估提供臨床協助。
+</div>
+
+<script>
+(function () {
+
+  /* ─── Data ─── */
+  var QUESTIONS = [
+    '將物品放在高過頭的架上', '擰毛巾',
+    '清洗或吹乾頭髮',         '推開重的門',
+    '清洗背部',               '提購物袋或公事包',
+    '穿上套頭衣物',           '費力的家務（擦窗、擦地）'
+  ];
+
+  var FM = [
+    { lbl: '無疲憊',     c: '#0ea5e9' },
+    { lbl: '輕度疲憊',   c: '#22d3ee' },
+    { lbl: '輕度疲憊',   c: '#34d399' },
+    { lbl: '輕度疲憊',   c: '#4ade80' },
+    { lbl: '中度疲憊',   c: '#facc15' },
+    { lbl: '中度疲憊',   c: '#fb923c' },
+    { lbl: '中度疲憊',   c: '#f97316' },
+    { lbl: '重度疲憊',   c: '#ef4444' },
+    { lbl: '重度疲憊',   c: '#dc2626' },
+    { lbl: '重度疲憊',   c: '#b91c1c' },
+    { lbl: '最嚴重疲憊', c: '#7c3aed' }
+  ];
+
+  var DOCTORS = [
+    {
+      name:  '宋子茜 醫師',
+      badge: '1·3·5週',
+      times: '週一早上・週三早上・週五下午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=T0&selectAll=true&QueryID=A02283'
+    },
+    {
+      name:  '邱翊翔 醫師',
+      badge: '',
+      times: '週一下午・週四下午',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegByDrName?vHospCode=C0&selectAll=true&QueryID=A01805'
+    },
+    {
+      name:  '黃薇臻 醫師',
+      badge: '',
+      times: '週五早上',
+      link:  'https://reg.ntuh.gov.tw/WebReg/WebReg/RegDoctorInfo?vHospCode=C0&drID=A02048'
+    }
+  ];
+
+  /* ─── State ─── */
+  var answers = [];
+  var fatigue = 0;
+  for (var i = 0; i < QUESTIONS.length; i++) answers.push(null);
+
+  /* ─── DOM ─── */
+  var grid      = document.getElementById('q-grid');
+  var btnSubmit = document.getElementById('btn-submit');
+  var slider    = document.getElementById('slider');
+  var sdot      = document.getElementById('sdot');
+  var warn      = document.getElementById('warn');
+  var resultEl  = document.getElementById('result');
+  var pill      = document.getElementById('score-pill');
+
+  /* ─────────────────────────────
+     Navigation
+  ───────────────────────────── */
+  function showScreen(n) {
+    var screens = document.querySelectorAll('.screen');
+    for (var s = 0; s < screens.length; s++) screens[s].classList.remove('active');
+    var target = document.getElementById('s' + n);
+    target.classList.add('active');
+    target.scrollTop = 0;
+  }
+
+  document.getElementById('btn-yes').addEventListener('click', function () {
+    this.classList.add('on');
+    document.getElementById('btn-no').classList.remove('on');
+    document.getElementById('no-result').style.display = 'none';
+    var self = this;
+    setTimeout(function () { self.classList.remove('on'); showScreen(2); }, 180);
+  });
+
+  document.getElementById('btn-no').addEventListener('click', function () {
+    this.classList.add('on');
+    document.getElementById('btn-yes').classList.remove('on');
+    var noResult = document.getElementById('no-result');
+    noResult.style.display = 'block';
+    setTimeout(function () { noResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
+  });
+
+  document.getElementById('btn-restart-no').addEventListener('click', resetAll);
+  document.getElementById('btn-back2').addEventListener('click', function () { showScreen(1); });
+  document.getElementById('btn-back3').addEventListener('click', function () { showScreen(2); });
+
+  /* ─────────────────────────────
+     Build question grid
+  ───────────────────────────── */
+  for (var qi = 0; qi < QUESTIONS.length; qi++) {
+    var cell = document.createElement('div');
+    cell.className = 'q-cell';
+    cell.id = 'qc' + qi;
+    cell.innerHTML =
+      '<div class="q-label">' + QUESTIONS[qi] + '</div>' +
+      '<div class="yn-group">' +
+        '<button type="button" class="yb yes" data-i="' + qi + '" data-v="1" aria-label="' + QUESTIONS[qi] + '：有困難">有困難</button>' +
+        '<button type="button" class="yb no"  data-i="' + qi + '" data-v="0" aria-label="' + QUESTIONS[qi] + '：沒有">沒有</button>' +
+      '</div>';
+    grid.appendChild(cell);
+  }
+
+  grid.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || t.tagName !== 'BUTTON') return;
+    var idx = parseInt(t.getAttribute('data-i'), 10);
+    var val = t.getAttribute('data-v') === '1';
+    answers[idx] = val;
+    var c = document.getElementById('qc' + idx);
+    c.className = 'q-cell ' + (val ? 'is-yes' : 'is-no');
+    var bs = c.querySelectorAll('.yb');
+    for (var b = 0; b < bs.length; b++) bs[b].classList.remove('on');
+    c.querySelector(val ? '.yes' : '.no').classList.add('on');
+    refresh();
+  });
+
+  function isReady() {
+    var hasYes = false, allAnswered = true;
+    for (var i = 0; i < answers.length; i++) {
+      if (answers[i] === true) hasYes = true;
+      if (answers[i] === null) allAnswered = false;
+    }
+    return hasYes || allAnswered;
+  }
+
+  function unanswered() {
+    var n = 0;
+    for (var i = 0; i < answers.length; i++) if (answers[i] === null) n++;
+    return n;
+  }
+
+  function refresh() {
+    var ok = isReady();
+    sdot.className = 'sdot' + (ok ? ' done' : '');
+    btnSubmit.className = 'btn-submit' + (ok ? '' : ' dim');
+    if (warn.classList.contains('show')) warn.classList.remove('show');
+  }
+
+  /* ─────────────────────────────
+     Fatigue slider
+  ───────────────────────────── */
+  function updateFatigue(v) {
+    v = parseInt(v, 10) || 0;
+    fatigue = v;
+    var m = FM[v];
+    var pct = (v / 10) * 100;
+    pill.textContent = v + '  ' + m.lbl;
+    pill.style.color = m.c;
+    slider.style.background =
+      'linear-gradient(to right,' + m.c + ' 0%,' + m.c + ' ' + pct + '%,#e2e8f0 ' + pct + '%,#e2e8f0 100%)';
+  }
+  slider.addEventListener('input', function () { updateFatigue(slider.value); });
+  updateFatigue(0);
+
+  /* ─────────────────────────────
+     Submit
+  ───────────────────────────── */
+  btnSubmit.addEventListener('click', function () {
+    if (!isReady()) {
+      var miss = unanswered();
+      warn.textContent = '請完成肩部評估：選擇至少一項「有困難」，或在剩下 ' + miss + ' 個項目都點「沒有」。';
+      warn.classList.add('show');
+      warn.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    try { evaluate(); }
+    catch (e) {
+      warn.textContent = '發生錯誤：' + (e && e.message ? e.message : e);
+      warn.classList.add('show');
+    }
+  });
+
+  /* ─────────────────────────────
+     Evaluate & render
+  ───────────────────────────── */
+  function evaluate() {
+    var diff = [];
+    for (var i = 0; i < QUESTIONS.length; i++) {
+      if (answers[i] === true) diff.push(QUESTIONS[i]);
+    }
+    var refer = diff.length > 0 || fatigue > 4;
+    var m = FM[fatigue];
+
+    var d = new Date();
+    var today = d.getFullYear() + '/' +
+      String(d.getMonth() + 1).padStart(2, '0') + '/' +
+      String(d.getDate()).padStart(2, '0');
+    var time = String(d.getHours()).padStart(2, '0') + ':' +
+      String(d.getMinutes()).padStart(2, '0');
+    var verifyCode = 'V' + d.getFullYear() +
+      String(d.getMonth() + 1).padStart(2, '0') +
+      String(d.getDate()).padStart(2, '0') +
+      String(d.getHours()).padStart(2, '0') +
+      String(d.getMinutes()).padStart(2, '0') +
+      String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+
+    var diffRows = '';
+    if (diff.length > 0) {
+      for (var x = 0; x < diff.length; x++) {
+        diffRows += '<div class="find-row"><span class="fdot" style="color:var(--pink)">&#9679;</span><span>' + diff[x] + '</span></div>';
+      }
+    } else {
+      diffRows = '<div class="find-row" style="grid-column:1/-1"><span class="fdot" style="color:var(--green)">&#9679;</span><span>肩部活動無明顯困難</span></div>';
+    }
+
+    /* Doctor boxes */
+    var doctorBoxes = '';
+    for (var di = 0; di < DOCTORS.length; di++) {
+      var dr = DOCTORS[di];
+      var badge = dr.badge ? '<span class="week-badge">' + dr.badge + '</span>' : '';
+      doctorBoxes +=
+        '<div class="doctor-box">' +
+          '<div>' +
+            '<div class="doctor-name">' + dr.name + '</div>' +
+            '<div class="doctor-times">' + badge + dr.times + '</div>' +
+          '</div>' +
+          '<a href="' + dr.link + '" target="_blank" class="tag">查詢掛號</a>' +
+        '</div>';
+    }
+
+    var html;
+    if (refer) {
+      html =
+        '<div class="notif-card">' +
+          '<div class="notif-bar"></div>' +
+          '<div class="notif-body">' +
+            '<div class="notif-head">' +
+              '<div class="notif-icon">&#128276;</div>' +
+              '<div>' +
+                '<div class="notif-title">復健科加掛通知</div>' +
+                '<div class="notif-sub">術後評估建議轉介復健科</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">台大癌醫中心 · 復健科門診</div>' +
+            doctorBoxes +
+            '<div style="font-size:11px;color:#475569;margin:10px 0;padding:9px 12px;background:#fef3f2;border-radius:8px">' +
+              '<strong style="color:#dc2626">加掛說明：</strong>若時段額滿欲加掛，請於門診時段至診間出示此畫面，或於門診前一日 18:00 於網路開放掛號' +
+            '</div>' +
+            '<div class="findings">' +
+              '<div class="find-hd">評估摘要</div>' +
+              '<div class="find-grid">' + diffRows +
+                '<div class="find-row full">' +
+                  '<span class="fdot" style="color:' + m.c + '">&#9679;</span>' +
+                  '<span>疲憊量尺：' + fatigue + ' 分（' + m.lbl + '）</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cta-box">出示此畫面申請復健科加掛</div>' +
+            '<div style="font-size:11px;color:#475569;margin:12px 0;padding:10px;background:#fef3f2;border-radius:6px;line-height:1.7">' +
+              '<strong style="color:#dc2626">建議截圖保存此評估結果以供醫師參考</strong>' +
+            '</div>' +
+            '<div class="notif-date">' +
+              '評估日期：' + today + ' ' + time + '<br>' +
+              '驗證碼：' + verifyCode + '（7日內有效）' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    } else {
+      html =
+        '<div class="good-card">' +
+          '<div class="good-icon">&#9989;</div>' +
+          '<div class="good-title">目前狀況良好</div>' +
+          '<p class="good-sub">肩部活動無明顯困難，<br>' +
+          '疲憊程度在輕度範圍內（' + fatigue + ' 分）。<br>' +
+          '繼續規律活動與自我照護。<br>' +
+          '若症狀出現或加重，請再次評估。</p>' +
+        '</div>';
+    }
+
+    html +=
+      '<p style="font-size:10.5px;color:#94a3b8;text-align:center;line-height:1.8;margin:8px 0 12px">' +
+        '本評估僅供參考，不取代醫師診斷' +
+      '</p>' +
+      '<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin:0 0 14px">' +
+        '<span style="font-size:11px;color:#94a3b8">隱私聲明</span>' +
+        '<button type="button" class="privacy-btn" id="privacy-btn" aria-label="隱私聲明">!</button>' +
+      '</div>' +
+      '<button type="button" class="btn-reset" id="btn-reset">&#8592; 重新評估</button>';
+
+    resultEl.innerHTML = html;
+    document.getElementById('btn-reset').addEventListener('click', resetAll);
+
+    var privBtn = document.getElementById('privacy-btn');
+    var privBubble = document.getElementById('privacy-bubble');
+    var privBackdrop = document.getElementById('privacy-backdrop');
+    if (privBtn) {
+      privBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        privBubble.classList.toggle('show');
+        privBackdrop.classList.toggle('show');
+      });
+    }
+    if (privBackdrop) {
+      privBackdrop.addEventListener('click', function () {
+        privBubble.classList.remove('show');
+        privBackdrop.classList.remove('show');
+      });
+    }
+
+    showScreen(3);
+    if (refer) logReferral();
+  }
+
+  /* ─────────────────────────────
+     Logging
+  ───────────────────────────── */
+  function showMessage(text, type) {
+    var container = document.getElementById('message-container');
+    if (!container) return;
+    container.innerHTML = '<div class="message ' + type + ' show">' + text + '</div>';
+    setTimeout(function () {
+      var msg = container.querySelector('.message');
+      if (msg) msg.classList.remove('show');
+    }, 4000);
+  }
+
+  function logReferral() {
+    if (window.location.protocol === 'file:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1') return;
+
+    var surgeryDate = document.getElementById('surgery-date').value;
+    var difficulties = [];
+    for (var i = 0; i < QUESTIONS.length; i++) {
+      if (answers[i] === true) difficulties.push(QUESTIONS[i]);
+    }
+
+    fetch('/api/log-referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ surgeryDate: surgeryDate, difficulties: difficulties, fatigueScore: fatigue })
+    }).then(function (res) {
+      if (res.ok) showMessage('評估已記錄 ✓', 'success');
+      else        showMessage('記錄失敗，請稍後重試', 'error');
+    }).catch(function () {
+      showMessage('記錄失敗，請稍後重試', 'error');
+    });
+  }
+
+  /* ─────────────────────────────
+     Show Referral directly from Screen 1
+  ───────────────────────────── */
+  function showReferral() {
+    var doctorBoxes = '';
+    for (var di = 0; di < DOCTORS.length; di++) {
+      var dr = DOCTORS[di];
+      var badge = dr.badge ? '<span class="week-badge">' + dr.badge + '</span>' : '';
+      doctorBoxes +=
+        '<div class="doctor-box">' +
+          '<div>' +
+            '<div class="doctor-name">' + dr.name + '</div>' +
+            '<div class="doctor-times">' + badge + dr.times + '</div>' +
+          '</div>' +
+          '<a href="' + dr.link + '" target="_blank" class="tag">查詢掛號</a>' +
+        '</div>';
+    }
+
+    var d = new Date();
+    var today = d.getFullYear() + '/' +
+      String(d.getMonth() + 1).padStart(2, '0') + '/' +
+      String(d.getDate()).padStart(2, '0');
+    var time = String(d.getHours()).padStart(2, '0') + ':' +
+      String(d.getMinutes()).padStart(2, '0');
+
+    var html =
+      '<div class="notif-card">' +
+        '<div class="notif-bar"></div>' +
+        '<div class="notif-body">' +
+          '<div class="notif-head">' +
+            '<div class="notif-icon">🔔</div>' +
+            '<div>' +
+              '<div class="notif-title">復健科加掛通知</div>' +
+              '<div class="notif-sub">初步篩選建議轉介復健科</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600">台大癌醫中心 · 復健科門診</div>' +
+          doctorBoxes +
+          '<div style="font-size:11px;color:#475569;margin:10px 0;padding:9px 12px;background:#fef3f2;border-radius:8px">' +
+            '<strong style="color:#dc2626">加掛說明：</strong>若時段額滿欲加掛，請於門診時段至診間出示此畫面，或於門診前一日 18:00 於網路開放掛號' +
+          '</div>' +
+          '<div class="cta-box">出示此畫面申請復健科加掛</div>' +
+          '<div class="notif-date">評估日期：' + today + ' ' + time + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<p style="font-size:10.5px;color:#94a3b8;text-align:center;line-height:1.8;margin:8px 0 12px">' +
+        '本評估僅供參考，不取代醫師診斷' +
+      '</p>' +
+      '<button type="button" class="btn-reset" id="btn-reset">&#8592; 重新評估</button>';
+
+    resultEl.innerHTML = html;
+    document.getElementById('btn-reset').addEventListener('click', resetAll);
+    showScreen(3);
+  }
+
+  /* ─────────────────────────────
+     Reset
+  ───────────────────────────── */
+  function resetAll() {
+    for (var i = 0; i < answers.length; i++) answers[i] = null;
+    var cells = document.querySelectorAll('.q-cell');
+    for (var c = 0; c < cells.length; c++) {
+      cells[c].className = 'q-cell';
+      var bs = cells[c].querySelectorAll('.yb');
+      for (var b = 0; b < bs.length; b++) bs[b].classList.remove('on');
+    }
+    slider.value = 0;
+    updateFatigue(0);
+    var sd = document.getElementById('surgery-date');
+    if (sd) sd.value = '';
+    warn.classList.remove('show');
+    refresh();
+    resultEl.innerHTML = '';
+    document.getElementById('btn-yes').classList.remove('on');
+    document.getElementById('btn-no').classList.remove('on');
+    document.getElementById('no-result').style.display = 'none';
+    showScreen(1);
+  }
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>術後自我檢查</title>
+  <style>
+    body  { font-family: sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+    label { display: block; margin: 12px 0; }
+    #slider { width: 100%; }
+  </style>
+</head>
+<body>
+
+  <h1>術後自我檢查</h1>
+  <p>這是我做的第一個網頁。</p>
+
+  <h2>過去一週，你有下列情形嗎？（有就打勾）</h2>
+  <label><input type="checkbox" class="q"> 手臂舉不高，梳頭或晾衣服有困難</label>
+  <label><input type="checkbox" class="q"> 手臂或腋下緊繃、疼痛</label>
+  <label><input type="checkbox" class="q"> 手或手臂腫脹</label>
+
+  <h2>疲憊程度</h2>
+  <input type="range" id="slider" min="0" max="10" value="0">
+  <p>目前分數：<b id="score">0</b> / 10</p>
+
+  <script>
+    var slider = document.getElementById('slider');
+    var score  = document.getElementById('score');
+
+    slider.oninput = function () {
+      score.textContent = slider.value;
+    };
+  </script>
+
+</body>
+</html>

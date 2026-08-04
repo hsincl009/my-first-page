@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>術後自我檢查</title>
+  <style>
+    body  { font-family: sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+    label { display: block; margin: 12px 0; }
+    #slider { width: 100%; }
+    button  { font-size: 16px; padding: 10px 20px; margin-top: 8px; }
+    #result { margin-top: 16px; padding: 12px; border-radius: 8px; }
+    .warn   { background: #ffe6e6; border: 1px solid #ff9a9a; }
+    .ok     { background: #e6f7e9; border: 1px solid #8fd39c; }
+    .note   { color: #666; font-size: 13px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+
+  <h1>術後自我檢查</h1>
+
+  <h2>過去一週，你有下列情形嗎？（有就打勾）</h2>
+  <label><input type="checkbox" class="q"> 手臂舉不高，梳頭或晾衣服有困難</label>
+  <label><input type="checkbox" class="q"> 手臂或腋下緊繃、疼痛</label>
+  <label><input type="checkbox" class="q"> 手或手臂腫脹</label>
+
+  <h2>疲憊程度</h2>
+  <input type="range" id="slider" min="0" max="10" value="0">
+  <p>目前分數：<b id="score">0</b> / 10</p>
+
+  <button id="check">看結果</button>
+  <div id="result"></div>
+
+  <p class="note">本頁為工作坊教學練習，僅供衛教參考，不能取代醫師診斷。</p>
+
+  <script>
+    var slider = document.getElementById('slider');
+    var score  = document.getElementById('score');
+
+    slider.oninput = function () {
+      score.textContent = slider.value;
+    };
+
+    document.getElementById('check').onclick = function () {
+      var hasDifficulty = document.querySelectorAll('.q:checked').length > 0;
+      var isTired       = Number(slider.value) > 4;
+      var box           = document.getElementById('result');
+
+      if (hasDifficulty || isTired) {
+        box.className   = 'warn';
+        box.textContent = '建議預約復健科門診，由醫療人員進一步評估。';
+      } else {
+        box.className   = 'ok';
+        box.textContent = '目前狀況良好，請維持日常伸展與活動。';
+      }
+    };
+  </script>
+
+</body>
+</html>
